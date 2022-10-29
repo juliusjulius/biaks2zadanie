@@ -3,6 +3,7 @@
 #include <vector>
 #include <bitset>
 #include<math.h>
+#include <fstream>
 #include <boost/multiprecision/miller_rabin.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/independent_bits.hpp>
@@ -14,11 +15,13 @@
 using namespace std;
 using namespace boost::multiprecision;
 using namespace boost::random;
+using std::fstream;
 
 const int SHIFT = 5;
 const cpp_int HASH = 1315423911;
 cpp_int prime1;
 cpp_int prime2;
+fstream file;
 
 //old hash binary
 /*string myHash(string data) {
@@ -68,11 +71,33 @@ cpp_int decryptHash(cpp_int cryptedHash, cpp_int D, cpp_int N)
 	return boost::multiprecision::powm(cryptedHash, (cpp_int)D, N);  //private key is N and D  // m(c) = c^D mod N   (cypted message)    DECRYPT
 }
 
+void writeInFile(string filename, string msg) 
+{
+	file.open(filename + ".txt", fstream::out);
+	file << msg;
+	file.close();
+}
+
+void writeInFile(string filename, cpp_int msg)
+{
+	file.open(filename + ".txt", fstream::out);
+	file << msg;
+	file.close();
+}
+
+string readFromFile(string filename)
+{
+	string readMessage = "";
+	getline(ifstream(filename + ".txt"), readMessage, '\0');
+	return readMessage;
+}
+
 int main(void)
 {	
 	string msg = "This is secret message";   // msg can't be longer than N (took me few hours..)
 	cpp_int hashedMessage = myHash(msg);
-
+	writeInFile("message", msg);
+	
 	prime1 = getPrime();
 	prime2 = getPrime();
 
@@ -85,23 +110,36 @@ int main(void)
 	
 	cpp_int D = boost::integer::mod_inverse((cpp_int)e, phi);      
 
-
-
-
+	//SIGN FILE
 	cpp_int cryptedHash = encryptHash(hashedMessage,e , N);
 	cout << "Hashed message: " << hashedMessage << endl << endl << "Encypting..." << endl << "EncryptedHash: " << cryptedHash << endl << endl << endl;
+	writeInFile("encryptedHash", cryptedHash);
 
+	//READ FILES 
+	cpp_int signedDocument(readFromFile("encryptedHash"));
+	string readMessage = readFromFile("message");
 
-	cpp_int decryptedHash = decryptHash(cryptedHash, D, N);
+	//DECRYPT HASH
+	cpp_int decryptedHash = decryptHash(signedDocument, D, N);
 	cout << "Decypting..." << endl << "decrypted hash: " << decryptedHash << endl << endl << endl;
+
+	//HASH READ MSG
+	cpp_int hashedReadMessage = myHash(readMessage);
+
+	//VERIFY
+	if (decryptedHash == hashedMessage)
+		cout << "DOCUMENT VERIFIED." << endl;
+	else
+		cout << "DOCUMENT NOT VERIFIED." << endl;
 	
 
-	cout << "prime1: " << prime1 << endl << endl;
+	/*cout << endl << endl << endl << endl << endl << endl << "prime1: " << prime1 << endl << endl;
 	cout << "prime2: " << prime2 << endl << endl;
 	cout << "N: " << N << endl << endl;
 	cout << "phi: " << phi << endl << endl;
 	cout << "e: " << e << endl << endl;
 	cout << "D: " << D << endl << endl;
+	*/
 
 	return 0;
 }
