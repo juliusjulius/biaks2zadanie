@@ -16,8 +16,7 @@ using namespace boost::multiprecision;
 using namespace boost::random;
 
 const int SHIFT = 5;
-cpp_int privateKey;
-cpp_int publicKey;
+const cpp_int HASH = 1315423911;
 cpp_int prime1;
 cpp_int prime2;
 
@@ -36,9 +35,9 @@ cpp_int prime2;
 	return hashedMsg;
 }*/
 
-unsigned int myHash(string data) {
+cpp_int myHash(string data) {
 
-	unsigned int hashedMsg = 1315423911;
+	cpp_int hashedMsg = HASH;
 
 	for (int i = 0; i < data.length(); ++i)
 		hashedMsg ^= ((hashedMsg << 5) + (data[i]) + (hashedMsg >> 2));
@@ -59,87 +58,50 @@ cpp_int getPrime()
 	return n;
 }
 
+cpp_int encryptHash(cpp_int hashedMessage, cpp_int e, cpp_int N)
+{
+	return boost::multiprecision::powm(hashedMessage, (cpp_int)e, N); //public key is N and e   // c(m) = m^e mod N   (message)     ENCRYPT
+}
+
+cpp_int decryptHash(cpp_int cryptedHash, cpp_int D, cpp_int N)
+{
+	return boost::multiprecision::powm(cryptedHash, (cpp_int)D, N);  //private key is N and D  // m(c) = c^D mod N   (cypted message)    DECRYPT
+}
+
 int main(void)
 {	
-	string msg = "toto je tajna sprava";
-	cout << "Hashed msg: " << myHash(msg) << endl << endl;
+	string msg = "This is secret message";   // msg can't be longer than N (took me few hours..)
+	cpp_int hashedMessage = myHash(msg);
 
-	//prime1 = getPrime();
-	//prime2 = getPrime();
-
-	//while (prime1 == prime2)
-	//	prime2 = getPrime();
-
-	//cpp_int N = prime1 * prime2;
-	//cpp_int phi = (prime1 - 1) * (prime2 - 1); 
-	// 
-	//int e = 2;			// 1 < e < phi
-	//while (boost::math::gcd(e, phi) != 1) 
-	//	e++;
-
-
-
-
-	//double tempD = 1 / (double)e;
-	//long double D = fmod(tempD, (long double)phi);
-
-
-
-	prime1 = 61;
-	prime2 = 53;
+	prime1 = getPrime();
+	prime2 = getPrime();
 
 	cpp_int N = prime1 * prime2;
-	int phi = ((int)prime1 - 1) * ((int)prime2 - 1);
+	cpp_int phi = (prime1 - 1) * (prime2 - 1);         
 
 	int e = 2;			// 1 < e < phi
 	while (boost::math::gcd(e, phi) != 1)
 		e++;
 	
-	e = 17;
-
-	//double tempD = 1 / (double)e;
-		//double D = fmod(tempD, (double)phi);
-
-	int D = boost::integer::mod_inverse(e, phi);  
-
-	cpp_int m = 65;
-	cpp_int c = 0;
-	 
-
-	// crypted = m^d * (mod n)????????  // z videa od dievciny
+	cpp_int D = boost::integer::mod_inverse((cpp_int)e, phi);      
 
 
-	//public key is N and e   // c(m) = m^e mod N   (message)			CRYPT
-	//c = boost::multiprecision::pow(m, e);
-	cpp_int cryptedHash = boost::multiprecision::powm(m, e, N);
-	//cpp_int cryptedHash = c % (int)N;
 
-	cout << "cypting" << endl;
-	cout << "m: " << m << endl;
-	cout << "e: " << e << endl;
-	cout << "c: " << c << endl;
-	cout << "cryptedHash: " << cryptedHash << endl << endl << endl;
 
+	cpp_int cryptedHash = encryptHash(hashedMessage,e , N);
+	cout << "Hashed message: " << hashedMessage << endl << endl << "Encypting..." << endl << "EncryptedHash: " << cryptedHash << endl << endl << endl;
+
+
+	cpp_int decryptedHash = decryptHash(cryptedHash, D, N);
+	cout << "Decypting..." << endl << "decrypted hash: " << decryptedHash << endl << endl << endl;
 	
 
-	//private key is N and D  // c(c) = c^D mod N   (cypted message)    DECRYPT
-	cpp_int uncryptedHash = 0;
-	m = pow(cryptedHash, D);
-	uncryptedHash = m % N;
-
-	cout << "decypting" << endl;
-	cout << "uncrypted hash: " << uncryptedHash << endl << endl << endl;
-	
-
-
-
-	cout << "prime1: " << prime1 << endl;
-	cout << "prime2: " << prime2 << endl;
-	cout << "N: " << N << endl;
-	cout << "phi: " << phi << endl;
+	cout << "prime1: " << prime1 << endl << endl;
+	cout << "prime2: " << prime2 << endl << endl;
+	cout << "N: " << N << endl << endl;
+	cout << "phi: " << phi << endl << endl;
 	cout << "e: " << e << endl << endl;
-	//cout << "doublePhi: " << (double)phi << endl << endl << endl;
-	cout << "D: " << D << endl << endl << endl;
+	cout << "D: " << D << endl << endl;
 
 	return 0;
 }
